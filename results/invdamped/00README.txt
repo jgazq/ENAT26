@@ -1,0 +1,1 @@
+EAS simulations for MARTIN and MIDA with a (negative/inversed) damped sine as temporal signal
