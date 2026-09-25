@@ -33,12 +33,6 @@ direction = args.direction
 subjectEAS = args.subjectEAS
 
 print(f"Cell: {cell_nr}, Subject: {subject}, Direction: {direction}")
-
-
-# increases the stack in able to load cell_nr = 6
-nrn_options = "-NSTACK 10000 -NFRAME 525"
-# nrn_options = "-nogui -NSTACK 3000 -NFRAME 525"
-os.environ["NEURON_MODULE_OPTIONS"] = nrn_options
 from neuron import h, gui
 
 h("NSTACK_size = 10000")
@@ -56,12 +50,6 @@ h.load_file('ssprocinit.hoc')
 h.setParamsAdultHuman() #this needs to go before the cell chooser, otherwise it won't make a difference
 h.cell_chooser(cell_nr)
 #print(h.topology()) #print this to decide the code for the cell below
-if cell_nr == 2:
-    cell = h.bNAC219_L1_NGCDA_e7cec642c3[0] # for cell = 2
-elif cell_nr == 3:
-    cell = h.bNAC219_L1_NGCDA_46b45974f4[0] # for cell = 3
-elif cell_nr == 7:
-    cell = h.cADpyr229_L23_PC_8ef1aa6602[0] # for cell = 7
 
 cell_name = h.cell_names.o(cell_nr-1).s
 
@@ -101,6 +89,7 @@ if createfsweepEAS: #similar to createfsweep but es calculation needs to happen 
     print('loading matf...')
     matf = sio.loadmat(rf'Exyz_EAS/{subject}_head_E-field.mat')
     print('loaded matf ✓')
+    
     sh0, sh1, sh2 = matf['Axis0'][0,:].shape[0] -1, matf['Axis1'][0,:].shape[0] -1, matf['Axis2'][0,:].shape[0] -1
     Exyz = np.nan_to_num(np.abs(matf['Snapshot0'].reshape(sh2,sh1,sh0,3)))
     E_x, E_y, E_z = Exyz[:,:,:,0], Exyz[:,:,:,1], Exyz[:,:,:,2]

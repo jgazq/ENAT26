@@ -33,12 +33,6 @@ direction = args.direction
 subjectEAS = args.subjectEAS
 
 print(f"Cell: {cell_nr}, Subject: {subject}, Direction: {direction}")
-
-
-# increases the stack in able to load cell_nr = 6
-nrn_options = "-NSTACK 10000 -NFRAME 525"
-# nrn_options = "-nogui -NSTACK 3000 -NFRAME 525"
-os.environ["NEURON_MODULE_OPTIONS"] = nrn_options
 from neuron import h, gui
 
 h("NSTACK_size = 10000")
@@ -56,12 +50,6 @@ h.load_file('ssprocinit.hoc')
 h.setParamsAdultHuman() #this needs to go before the cell chooser, otherwise it won't make a difference
 h.cell_chooser(cell_nr)
 #print(h.topology()) #print this to decide the code for the cell below
-if cell_nr == 2:
-    cell = h.bNAC219_L1_NGCDA_e7cec642c3[0] # for cell = 2
-elif cell_nr == 3:
-    cell = h.bNAC219_L1_NGCDA_46b45974f4[0] # for cell = 3
-elif cell_nr == 7:
-    cell = h.cADpyr229_L23_PC_8ef1aa6602[0] # for cell = 7
 
 cell_name = h.cell_names.o(cell_nr-1).s
 
@@ -76,13 +64,8 @@ PROJECT_ROOT = os.path.dirname(os.path.realpath(__file__))
 createfsweepBunif = 0 #bool # this calculates the threshold for different frequencies for a uniform magnetic field (different Exyz depending on frequency)
 save_coord_somas = 1
 createfsweepBunif_SPFD = 0 #bool
-createfsweepEAS = 0
 convergence_dt_Bunif = 0
 convergence_dur_Bunif = 0
-createfsweeplocs = 0 #bool #this does a frequency sweep for different locations (updated)
-createlocsweep = 0 #bool # this does a frequency sweep for different locations (deprecated)
-titration = 0 #bool # plots titration factor if 1, otherwise actual stimulation
-E_magsweep = 0 #bool #this calculates the threshold for a uniform E-field for different magnitudes
 
 #----------------------------------------------------------------------------------------------------------#
 "code"
@@ -161,7 +144,7 @@ if createfsweepBunif: #similar to createfsweep but es calculation needs to happe
             if TMS or Bunif:
                 h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                 #-> D_x, D_y and D_z get a value (before = 0)
-                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                 #-> E_x, E_y and E_z get a value (before = 0)
                 #h("load_potentials = 1")
                 h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
@@ -190,7 +173,7 @@ if createfsweepBunif: #similar to createfsweep but es calculation needs to happe
         for i_p,polygon in enumerate(polygons[10:]):
             location, normal = polygon['centroid'], polygon['normal']
             print(f'location_{i_p}: {location}')
-            _,x_values,y_values,z_values = es_matrix_matf(E_x300,E_y300,E_z300,dx,(0,0,0)) #E_x, E_y and E_z are only used for the shape in this case so doesn't matter which freq: 300 or 100k
+            _,x_values,y_values,z_values = fcts.es_matrix_matf(E_x300,E_y300,E_z300,dx,(0,0,0)) #E_x, E_y and E_z are only used for the shape in this case so doesn't matter which freq: 300 or 100k
 
             thresh_freqs = np.zeros(numb_freq)
             titr_freqs = np.zeros(numb_freq)
@@ -202,7 +185,7 @@ if createfsweepBunif: #similar to createfsweep but es calculation needs to happe
                 if TMS or Bunif:
                     h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                     #-> D_x, D_y and D_z get a value (before = 0)
-                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                     #-> E_x, E_y and E_z get a value (before = 0)
                     #h("load_potentials = 1")
                     h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
@@ -295,14 +278,14 @@ if save_coord_somas: #similar to createfsweep but es calculation needs to happen
         locations[i_p] = tt.calcESext4(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
 
     print(locations)
-    with open(rf"tissue_meshes\subjects\s3\layers\somas.pkl",'rb') as pf:
+    with open(rf"tissue_meshes\subjects\s{subject}\layers\somas.pkl",'rb') as pf:
         pklsomas = pickle.load(pf)
     #pklsomas = {}
     print(pklsomas)
     pklsomas[cell_nr] = locations
     print(pklsomas)
-    with open(rf"tissue_meshes\subjects\s3\layers\somas.pkl",'wb') as pf:
-        pklsomas = pickle.dump(pklsomas,pf)
+    with open(rf"tissue_meshes\subjects\s{subject}\layers\somas.pkl",'wb') as pf:
+        pickle.dump(pklsomas,pf)
 
 
 if createfsweepBunif_SPFD: #similar to createfsweep but es calculation needs to happen inside freq iteration as es is different for different frequencies (<10kHz: 300Hz, >10kHz: 100 kHz)
@@ -381,7 +364,7 @@ if createfsweepBunif_SPFD: #similar to createfsweep but es calculation needs to 
             if TMS or Bunif:
                 h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                 #-> D_x, D_y and D_z get a value (before = 0)
-                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                 #-> E_x, E_y and E_z get a value (before = 0)
                 #h("load_potentials = 1")
                 h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
@@ -424,7 +407,7 @@ if createfsweepBunif_SPFD: #similar to createfsweep but es calculation needs to 
                 if TMS or Bunif:
                     h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                     #-> D_x, D_y and D_z get a value (before = 0)
-                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                     #-> E_x, E_y and E_z get a value (before = 0)
                     #h("load_potentials = 1")
                     h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
@@ -454,111 +437,6 @@ if createfsweepBunif_SPFD: #similar to createfsweep but es calculation needs to 
     else:
         results['hotspot_100k'] = copy.copy(results['hotspot_300'])
     with open(f"results/SPFD/{name}.pkl",'wb') as pf:
-        pickle.dump(results,pf)
-
-    time_end = datetime.datetime.now()
-    time_diff = time_end-time_start
-    print('total simulation time:  ',time_diff)
-
-
-if createfsweepEAS: #similar to createfsweep but es calculation needs to happen inside freq iteration as es is different for different frequencies (<10kHz: 300Hz, >10kHz: 100 kHz)
-    TMS = 0 #also use the right x86 folder and change save folder
-    Eunif = 0 #also use the right x86 folder and change save folder
-    Bunif = 1 #same nrnmech.dll file as TMS (or folder on linux) 
-
-    #h.v_init = -75
-    interpol = 'linear'
-    logspace = (10,2,5)
-    dt_fact = 100
-    dx,dy,dz = 0.49911274*1e3, 0.49893188*1e3, 0.49898493*1e3 #um
-    dxyz = np.array([dx,dy,dz])
-    subject = subjectEAS
-    GMi = 75 if subject == 'MARTIN' else 72 if subject == 'MIDA' else None
-
-    time_start = datetime.datetime.now()
-
-    name = "EAS_"+subject+"_interpol_"+str(interpol)+"_logspace_"+str(logspace)+"_cell_nr_"+str(cell_nr)+"_dt_fact_"+str(dt_fact)
-
-    numb_freq, logstart, logstop = logspace
-
-    print('loading matf...')
-    matf = sio.loadmat(rf'Exyz_EAS/{subject}_head_E-field.mat')
-    print('loaded matf ✓')
-
-    sh0, sh1, sh2 = matf['Axis0'][0,:].shape[0] -1, matf['Axis1'][0,:].shape[0] -1, matf['Axis2'][0,:].shape[0] -1
-    Exyz = np.nan_to_num(matf['Snapshot0'].reshape(sh2,sh1,sh0,3))
-    Exyz = np.nan_to_num(np.abs(matf['Snapshot0'].reshape(sh2,sh1,sh0,3)))
-
-    #tranpose this already
-    Exyz_tr = np.transpose(Exyz, (1, 2, 0, 3))
-    Exyz_trfl= np.flip(Exyz_tr, axis=1)
-
-    E_x, E_y, E_z = Exyz_trfl[:,:,:,0], Exyz_trfl[:,:,:,1], Exyz_trfl[:,:,:,2]
-    E_mag = np.sqrt(E_x**2+E_y**2+E_z**2)
-
-    #E_mag_trfl = np.sqrt(E_x**2+E_y**2+E_z**2)
-    #E_mag_fl = np.transpose(E_mag_trfl, (1, 2, 0))
-    #E_mag_nan = np.flip(E_mag_fl, axis=1)
-    #E_mag = np.nan_to_num(E_mag_nan)
-
-    data = np.fromfile(rf'Exyz_EAS/{subject}_head_voxels.raw', dtype=np.uint8)
-    brainmap_0 = data.reshape((sh2,sh1,sh0,2))
-    brainmap_trfl = brainmap_0[:,:,:,0]
-    brainmap_fl = np.transpose(brainmap_trfl, (1, 2, 0))
-    brainmap = np.flip(brainmap_fl, axis=1)
-
-    E_mag_GM = (E_mag*(brainmap==GMi)).flatten()
-    E_max_GM = np.max(E_mag*(brainmap==GMi))
-    E_max_GM_99 = np.percentile(E_mag_GM[E_mag_GM != 0],99)
-    E_max_GM_99_9 = np.percentile(E_mag_GM[E_mag_GM != 0],99.9)
-    E_max_GM_100 = np.percentile(E_mag_GM[E_mag_GM != 0],100)
-    print(f'max: {E_max_GM} , 99 percentile: {E_max_GM_99}, 99.9 percentile: {E_max_GM_99_9}, 100 percentile: {E_max_GM_100}')
-    E_max_GMloc = np.unravel_index(np.argmax(E_mag*(brainmap==GMi)),E_mag.shape)
-    print(f'max @ {E_max_GMloc}')
-    #meshname = 'layer_1_depth_0.06' if cell_nr < 6 else 'layer_23_depth_0.40' if cell_nr < 11 else 'layer_4_depth_0.55' if cell_nr < 16 else 'layer_5_depth_0.65' if cell_nr < 21 else 'layer_6_depth_0.85' if cell_nr <26 else 'ERROR'
-    meshname = 'layer_1_depth_0.06' if 'L1' in cell_name else 'layer_23_depth_0.40' if 'L23' in cell_name else 'layer_4_depth_0.55' if 'L4' in cell_name else 'layer_5_depth_0.65' if 'L5' in cell_name else 'layer_6_depth_0.85' if 'L6' in cell_name else 'ERROR'
-    print('loading trimesh...')
-    surface_mesh = trimesh.load_mesh(rf"tissue_meshes/EAS/{subject}/layers/{meshname}.stl")
-    print('loaded trimesh ✓')
-    polygons = fcts.closest_meshes_to_point(surface_mesh,E_max_GMloc)
-    
-    results = {'hotspot': {key: {} for key in range(10)}}
-    prev_normal = np.array([0,0,1])
-
-    for i_p,polygon in enumerate(polygons[:]):
-        location, normal = polygon['centroid'], polygon['normal']
-        print(f'location_{i_p}: {location}, {normal} ({subject})')
-        _,x_values,y_values,z_values = es_matrix_matf(E_x,E_y,E_z,dx,(0,0,0),dy=dy,dz=dz)
-
-        freq = 1700
-
-        if TMS or Bunif:
-            h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
-            #-> D_x, D_y and D_z get a value (before = 0)
-            tt.calcESext3(*location*dxyz,normal,np.array([0,0,1]),interpol,E_x,E_y,E_z,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
-            #-> E_x, E_y and E_z get a value (before = 0)
-            #h("load_potentials = 1")
-            h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
-            #-> es gets a value (before = 0)
-                
-        DUR_factor = 1
-        h.dt = min(1/(dt_fact*freq) * 1e3, 0.025) #because h.dt is in ms, h.dt = 0.025 ms(default) when freq = 1e3 Hz
-        h.DUR = int(np.ceil(max(5,DUR_factor*1/freq*1e3)))   # simulation should be minimally 5 ms (+ delay), low freq require higher sim times
-                                    # h.DUR = 5 ms(default) when freq = 200 Hz (Tmin)
-        h.tstop = h.DUR + h.DEL + 1 # +1 for safety
-        print(f'freq = {freq}, h.dt = {h.dt}, h.DUR = {h.DUR}, h.tstop = {h.tstop}')
-        h.finitialize()
-        print("initialized")
-        titr = tt.calcThreshSimpl(0,0,0,h.DEL,h.DUR,0)
-        thresh = titr * E_max_GM_99 * h.A_mV_xtra
-        print(f'titr = {titr}')
-        print(E_max_GM_99)
-        print(h.A_mV_xtra)
-        print(f'thresh = {thresh}')
-        results['hotspot'][i_p] = {'location': location, 'normal': normal, 'freq': freq, 'titr': titr, 'thresh': thresh}
-
-
-    with open(f"results/FEM/{name}.pkl",'wb') as pf:
         pickle.dump(results,pf)
 
     time_end = datetime.datetime.now()
@@ -645,7 +523,7 @@ if convergence_dt_Bunif:
             if TMS or Bunif:
                 h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                 #-> D_x, D_y and D_z get a value (before = 0)
-                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                 #-> E_x, E_y and E_z get a value (before = 0)
                 #h("load_potentials = 1")
                 h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
@@ -690,7 +568,7 @@ if convergence_dt_Bunif:
                 if TMS or Bunif:
                     h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                     #-> D_x, D_y and D_z get a value (before = 0)
-                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                     #-> E_x, E_y and E_z get a value (before = 0)
                     #h("load_potentials = 1")
                     h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
@@ -803,7 +681,7 @@ if convergence_dur_Bunif:
             if TMS or Bunif:
                 h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                 #-> D_x, D_y and D_z get a value (before = 0)
-                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                 #-> E_x, E_y and E_z get a value (before = 0)
                 #h("load_potentials = 1")
                 h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment
@@ -847,7 +725,7 @@ if convergence_dur_Bunif:
                 if TMS or Bunif:
                     h.getcoords() #gets the coordinates and also calculates D_x, D_y and D_z at every segment
                     #-> D_x, D_y and D_z get a value (before = 0)
-                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
+                    tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x300,E_y300,E_z300,x_values,y_values,z_values) if freq < 1e4 else tt.calcESext3(*location*dx,normal,np.array([0,0,1]),interpol,E_x100k,E_y100k,E_z100k,x_values,y_values,z_values) #calculation of E_x, E_y and E_z at every segment
                     #-> E_x, E_y and E_z get a value (before = 0)
                     #h("load_potentials = 1")
                     h.calc_pseudo_es()#h.getes2() #calculation of the potential at every segment

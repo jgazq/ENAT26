@@ -6,6 +6,7 @@ import math
 import sys, os
 from scipy.interpolate import griddata, interpn
 import matplotlib.pyplot as plt
+import functions as fcts
 
 # # Settings
 # nsegMul = 1
@@ -81,7 +82,7 @@ def calcESext3(xT,yT,zT,new_normal,prev_normal,InterpolMethod,Arrayx,Arrayy,Arra
                     xp, yp, zp = seg.x_xtra,seg.y_xtra,seg.z_xtra
                     x90, y90,z90 = xp, -zp, yp
                     #then rotate the neuron (if necessary, otherwise [0,0,1])
-                    [xD,yD,zD] = align_to_normal(np.array([x90,y90,z90]),new_normal,prev_normal)+[xT,yT,zT]
+                    [xD,yD,zD] = fcts.align_to_normal(np.array([x90,y90,z90]),new_normal,prev_normal)+[xT,yT,zT]
                     seg.Ex_xtra = interpn((x,y,z),Arrayx,\
                     [xD,yD,zD],method=InterpolMethod,fill_value=0,bounds_error=False)[0] # [V/m]
                     seg.Ey_xtra = interpn((x,y,z),Arrayy,\
@@ -103,7 +104,7 @@ def calcESext4(xT,yT,zT,new_normal,prev_normal,InterpolMethod,Arrayx,Arrayy,Arra
                     xp, yp, zp = seg.x_xtra,seg.y_xtra,seg.z_xtra
                     x90, y90,z90 = xp, -zp, yp
                     #then rotate the neuron (if necessary, otherwise [0,0,1])
-                    [xD,yD,zD] = align_to_normal(np.array([x90,y90,z90]),new_normal,prev_normal)+[xT,yT,zT]
+                    [xD,yD,zD] = fcts.align_to_normal(np.array([x90,y90,z90]),new_normal,prev_normal)+[xT,yT,zT]
                     if 'soma' in str(seg):
                         return (xD,yD,zD) 
 
